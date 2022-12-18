@@ -9,7 +9,7 @@ uint16_t val=0;
 
 uint16_t val1=0;
 
-uint16_t val_noint = 0;
+uint8_t val_noint = 0;
 /*
 void ADC_IRQHandler(){
 	if(getBit(ADC1->SR, 1)){
@@ -19,12 +19,39 @@ void ADC_IRQHandler(){
 }
 */
 
+void sendChar (int ch)  {
+  while (!getBit(USART2->SR,7));
+  USART2->DR = ch;
+}
+
+void serial2Init(void){        // USART2 je pripojeny k USB
+  setBit(RCC->APB1ENR, 17);    // Povoleni hodin na UART2
+  setBit(USART2->CR1, 13);    // Povoleni rozhrani USART2
+  setBit(USART2->CR1, 2);    // Povoleni prijmu
+  setBit(USART2->CR1, 3);    // Povoleni odesilani
+  USART2->BRR = (11<<0) | (8<<4); // Nastaveni rychlosti na ?
+
+  setBit(RCC->AHB1ENR, 0);    // nastaveni hodin portu A
+  setBit(GPIOA->MODER, 5);    // Alternativni funkce pro PA.2
+  setBit(GPIOA->MODER, 7);    // Alternativni funkce pro PA.3
+
+  GPIOA->AFR[0]  |= (7<<8);   // Bits (11:10:9:8) = 0:1:1:1  --> AF7 Alternate function for USART2 at Pin PA2
+  GPIOA->AFR[0]  |= (7<<12);   // Bits (15:14:13:12) = 0:1:1:1  --> AF7 Alternate function for USART2 at Pin PA3
+}
+
+uint8_t UART2_getchar(void){
+    uint8_t temp;
+    while(!(USART2->SR & (1<<5)));
+    temp = USART2->DR;
+    return temp;
+}
+
 void pwmSetup(void){
 	setBit(RCC->APB1ENR, 0);        // Povoleni hodin casovace TIM2
 
 	TIM2->PSC = 15;                    // preddelicka 16 na 1 MHz
-	TIM2->ARR = 4096;                    // autoreload registr na 1000 Hz
-	TIM2->CCR2 = 250;
+	TIM2->ARR = 100;                    // autoreload registr na 1000 Hz
+	TIM2->CCR2 = 50;
 	setBit(TIM2->EGR, 0);
 
 	setBit(TIM2->CCMR1, 14);            // PWM1 mode pro CC2
@@ -84,8 +111,11 @@ void adcSetup(){
 	clrBit(ADC1->SQR3, 0); 		//set first and only channel in seq. as ADC1_ch0
 	clrBit(ADC1->SQR3, 1);   	// reset state - all conversions from channel0 (PA_0)
 
-	clrBit(ADC1->CR1, 24);     	// 12-bit resolution (Tconv = 15 ADCCLK cycles)
-	clrBit(ADC1->CR1, 25);    	// reset state
+	//clrBit(ADC1->CR1, 24);     	// 12-bit resolution (Tconv = 15 ADCCLK cycles)
+	//clrBit(ADC1->CR1, 25);    	// reset state
+
+    setBit(ADC1->CR1, 25);         // 8-bit resolution (Tconv =  11 ADCCLK cycles)
+
 
 	//setBit(ADC1->CR2, 1);		//cont. mode;
 	setBit(ADC1->CR2, 0);		// turn on ADC
@@ -104,23 +134,34 @@ int main(void){
 	pwmSetup();
 	pinSetup();
 	adcSetup();
+	serial2Init();
 
     clrBit(TIM2->SR, 0);             // Obnoveni status registru po prerueseni
     setBit(TIM2->CR1, 0);            // Povoleni casovace TIM2 CEN
     setBit(RCC->CR, 0);             // Nastaveni HSI jako zroj hodin (16MHz)
 
+    uint8_t msg = 0;
 
     while(1){
+    	msg=UART2_getchar();
+    if(msg>100){
+    	setBit(ADC1->CR2, 30);             // software ADC start
+		while (!getBit(ADC1->SR, 1));     // wait until conversion end
+		msg= ADC1->DR;
+		sendChar(msg);
+    }
+    else{
+    	TIM2->CCR2 = msg;
+    }
 
-
-
+		/*
     	setBit(ADC1->CR2, 30);             // software ADC start
 		while (!getBit(ADC1->SR, 1));     // wait until conversion end
 		val_noint= ADC1->DR;
 		TIM2->CCR2 = val_noint;
 		delay(10);
+		*/
 
     }
-
 }
 
