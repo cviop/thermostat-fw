@@ -220,17 +220,17 @@ void pwmSetup(void){
  80002c2:	f043 0301 	orr.w	r3, r3, #1
  80002c6:	6413      	str	r3, [r2, #64]	; 0x40
 
-	TIM2->PSC = 15;                    // preddelicka 16 na 1 MHz
+	TIM2->PSC = 5;                    // preddelicka 16 na 1 MHz
  80002c8:	f04f 4380 	mov.w	r3, #1073741824	; 0x40000000
- 80002cc:	220f      	movs	r2, #15
+ 80002cc:	2205      	movs	r2, #5
  80002ce:	629a      	str	r2, [r3, #40]	; 0x28
 	TIM2->ARR = 100;                    // autoreload registr na 1000 Hz
  80002d0:	f04f 4380 	mov.w	r3, #1073741824	; 0x40000000
  80002d4:	2264      	movs	r2, #100	; 0x64
  80002d6:	62da      	str	r2, [r3, #44]	; 0x2c
-	TIM2->CCR2 = 50;
+	TIM2->CCR2 = 1;
  80002d8:	f04f 4380 	mov.w	r3, #1073741824	; 0x40000000
- 80002dc:	2232      	movs	r2, #50	; 0x32
+ 80002dc:	2201      	movs	r2, #1
  80002de:	639a      	str	r2, [r3, #56]	; 0x38
 	setBit(TIM2->EGR, 0);
  80002e0:	f04f 4380 	mov.w	r3, #1073741824	; 0x40000000
@@ -513,35 +513,35 @@ int main(void){
  80004be:	f7ff fee5 	bl	800028c <UART2_getchar>
  80004c2:	4603      	mov	r3, r0
  80004c4:	71fb      	strb	r3, [r7, #7]
-    if(msg>100){
+		if(msg>100){
  80004c6:	79fb      	ldrb	r3, [r7, #7]
  80004c8:	2b64      	cmp	r3, #100	; 0x64
  80004ca:	d914      	bls.n	80004f6 <main+0x7e>
-    	setBit(ADC1->CR2, 30);             // software ADC start
+			setBit(ADC1->CR2, 30);             // software ADC start
  80004cc:	4b0d      	ldr	r3, [pc, #52]	; (8000504 <main+0x8c>)
  80004ce:	689b      	ldr	r3, [r3, #8]
  80004d0:	4a0c      	ldr	r2, [pc, #48]	; (8000504 <main+0x8c>)
  80004d2:	f043 4380 	orr.w	r3, r3, #1073741824	; 0x40000000
  80004d6:	6093      	str	r3, [r2, #8]
-		while (!getBit(ADC1->SR, 1));     // wait until conversion end
+			while (!getBit(ADC1->SR, 1));     // wait until conversion end
  80004d8:	bf00      	nop
  80004da:	4b0a      	ldr	r3, [pc, #40]	; (8000504 <main+0x8c>)
  80004dc:	681b      	ldr	r3, [r3, #0]
  80004de:	f003 0302 	and.w	r3, r3, #2
  80004e2:	2b00      	cmp	r3, #0
  80004e4:	d0f9      	beq.n	80004da <main+0x62>
-		msg= ADC1->DR;
+			msg= ADC1->DR;
  80004e6:	4b07      	ldr	r3, [pc, #28]	; (8000504 <main+0x8c>)
  80004e8:	6cdb      	ldr	r3, [r3, #76]	; 0x4c
  80004ea:	71fb      	strb	r3, [r7, #7]
-		sendChar(msg);
+			sendChar(msg);
  80004ec:	79fb      	ldrb	r3, [r7, #7]
  80004ee:	4618      	mov	r0, r3
  80004f0:	f7ff fe70 	bl	80001d4 <sendChar>
  80004f4:	e7e3      	b.n	80004be <main+0x46>
-    }
-    else{
-    	TIM2->CCR2 = msg;
+		}
+		else{
+			TIM2->CCR2 = msg;
  80004f6:	f04f 4280 	mov.w	r2, #1073741824	; 0x40000000
  80004fa:	79fb      	ldrb	r3, [r7, #7]
  80004fc:	6393      	str	r3, [r2, #56]	; 0x38

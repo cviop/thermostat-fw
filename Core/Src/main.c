@@ -49,9 +49,9 @@ uint8_t UART2_getchar(void){
 void pwmSetup(void){
 	setBit(RCC->APB1ENR, 0);        // Povoleni hodin casovace TIM2
 
-	TIM2->PSC = 15;                    // preddelicka 16 na 1 MHz
+	TIM2->PSC = 5;                    // preddelicka 16 na 1 MHz
 	TIM2->ARR = 100;                    // autoreload registr na 1000 Hz
-	TIM2->CCR2 = 50;
+	TIM2->CCR2 = 1;
 	setBit(TIM2->EGR, 0);
 
 	setBit(TIM2->CCMR1, 14);            // PWM1 mode pro CC2
@@ -144,15 +144,15 @@ int main(void){
 
     while(1){
     	msg=UART2_getchar();
-    if(msg>100){
-    	setBit(ADC1->CR2, 30);             // software ADC start
-		while (!getBit(ADC1->SR, 1));     // wait until conversion end
-		msg= ADC1->DR;
-		sendChar(msg);
-    }
-    else{
-    	TIM2->CCR2 = msg;
-    }
+		if(msg>100){
+			setBit(ADC1->CR2, 30);             // software ADC start
+			while (!getBit(ADC1->SR, 1));     // wait until conversion end
+			msg= ADC1->DR;
+			sendChar(msg);
+		}
+		else{
+			TIM2->CCR2 = msg;
+		}
 
 		/*
     	setBit(ADC1->CR2, 30);             // software ADC start
